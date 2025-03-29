@@ -14,7 +14,7 @@ Run is a simple yet powerful command execution utility that allows you to define
 
 ## Installation
 
-To install, simply download and place the executable in your preferred directory. Ensure that the application has the necessary permissions to modify JSON files for storing command entries.
+To install, download and execute the installer. Run the installer as an administrator to make it globally accessible.
 
 ## Usage
 
