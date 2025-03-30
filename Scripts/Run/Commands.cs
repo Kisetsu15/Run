@@ -8,6 +8,7 @@
         public const string help = "-h";
         public const string administrator = "-a";
         public const string shell = "-sh";
+        public const string version = "-v";
         public static string[] Strings { get; private set; } = [run, add, remove, list, clear, help, administrator, shell];
     }
 }

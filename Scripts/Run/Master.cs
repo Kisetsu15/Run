@@ -1,5 +1,7 @@
 ﻿namespace Run {
     public class Master {
+        private const string Version = "Run 1.0.0";
+
         public static void Main( string[] args ) {
             if ( args.Length == 0 ) {
                 HelpCommand();
@@ -21,6 +23,9 @@
                     break;
                 case Commands.help:
                     CheckAndExecute(1, HelpCommand);
+                    break;
+                case Commands.version:
+                    CheckAndExecute(1, VersionCommand);
                     break;
                 case Commands.administrator:
                     RunAsAdministratorCommand(args);
@@ -157,5 +162,7 @@
             }
             Console.WriteLine(line);
         }
+
+        private static void VersionCommand() => Console.WriteLine(Version);
     }
 }
