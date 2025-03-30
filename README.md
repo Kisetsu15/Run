@@ -50,11 +50,23 @@ run [command] [option]
    ```sh
    run add myscript "C:\Scripts\myscript.bat"
    ```
+   ```sh
+   run add youtube "https://www.youtube.com"
+   ```
+   ```sh
+   run add vs "C:\Program Files\Microsoft Visual Studio\2022\Community\Common7\IDE\devenv.exe"
+   ```
 
 2. **Running a command**
 
    ```sh
    run myscript
+   ```
+   ```sh
+   run youtube
+   ```
+   ```sh
+   run vs
    ```
 
 3. **Running a command in a shell**
