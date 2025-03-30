@@ -1,54 +1,67 @@
-﻿using System;
-using System.Diagnostics;
-using System.IO;
-using System.Linq;
+﻿using System.Diagnostics;
 using System.Security.Principal;
 
 namespace Run_Uninstaller {
     public class Uninstaller {
-        private static string InstallPath = IsRunningAsAdmin()
+        private static readonly string InstallPath = IsRunningAsAdmin()
             ? "C:\\Program Files\\Run"
             : Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Run");
 
         private static readonly string Executable = "run.exe";
-        private static readonly string LogFile = "install.log";
+
+        private static bool isSilent = false;
 
         public static void Main( string[] args ) {
-            Console.WriteLine($"Uninstalling Run from '{InstallPath}'...");
+            isSilent = args.Contains("--silent") || args.Contains("/S") || args.Contains("/silent");
+            Whisper($"Uninstalling Run from '{InstallPath}'...");
 
-            // Check if file exists
             string exePath = Path.Combine(InstallPath, Executable);
-            if ( !File.Exists(exePath) ) {
-                Console.WriteLine("Run is not installed.");
+            if ( !File.Exists(exePath) && !Directory.Exists(InstallPath) ) {
+                Whisper("Run is not installed.");
                 return;
             }
 
             try {
                 RemoveFromPath(InstallPath);
-                Console.WriteLine("Removed from PATH.");
+                Whisper("Removed from PATH.");
 
-                // Create a temporary batch script to delete itself
                 string batchFile = Path.Combine(Path.GetTempPath(), "uninstall_run.bat");
-                File.WriteAllText(batchFile, $@"
-@echo off
-timeout /t 2 /nobreak >nul
-rmdir /s /q ""{InstallPath}""
-del /f /q ""{batchFile}""
-");
+                File.WriteAllText(batchFile, CreateBatchScript(InstallPath));
 
-                // Run batch script and close application
-                ProcessStartInfo psi = new ProcessStartInfo {
+                string installerFile = Path.Combine(GetInstallerDir(), "Run-Installer.exe");
+                string logFile = Path.Combine(GetInstallerDir(), "install.log");
+
+                if ( File.Exists(logFile) )
+                    File.Delete(logFile); 
+                if ( File.Exists(installerFile) )
+                    File.Delete(installerFile);
+
+                ProcessStartInfo psi = new() {
                     FileName = "cmd.exe",
                     Arguments = $"/c start /min \"\" \"{batchFile}\"",
-                    WindowStyle = ProcessWindowStyle.Hidden,
-                    CreateNoWindow = true
+                    CreateNoWindow = true,
+                    UseShellExecute = true
                 };
                 Process.Start(psi);
 
-                Console.WriteLine("Uninstalling...");
-                Environment.Exit(0);
+                Whisper("Uninstalling...");
             } catch ( Exception ex ) {
-                Console.WriteLine($"Error: {ex.Message}");
+                Whisper($"Error: {ex.Message}");
+            }
+        }
+
+        private static string GetInstallerDir() {
+            try {
+                string path = "installerLocation.txt";
+                return File.Exists(path) ? File.ReadAllText(path) : "";
+            } catch {
+                return "";
+            }
+        }
+
+        private static void Whisper( string message ) {
+            if ( !isSilent ) {
+                Console.WriteLine(message);
             }
         }
 
@@ -60,10 +73,12 @@ del /f /q ""{batchFile}""
             string currentPath = Environment.GetEnvironmentVariable("PATH", target) ?? "";
             var paths = currentPath.Split(';').ToList();
 
-            if ( paths.Contains(pathToRemove) ) {
-                paths.Remove(pathToRemove);
-                Environment.SetEnvironmentVariable("PATH", string.Join(";", paths), target);
+            if ( !paths.Contains(pathToRemove) ) {
+                return;
             }
+
+            paths.Remove(pathToRemove);
+            Environment.SetEnvironmentVariable("PATH", string.Join(";", paths), target);
         }
 
         private static bool IsRunningAsAdmin() {
@@ -71,8 +86,25 @@ del /f /q ""{batchFile}""
             WindowsPrincipal principal = new(identity);
             return principal.IsInRole(WindowsBuiltInRole.Administrator);
         }
+
+        private static string CreateBatchScript( string installPath ) {
+            return $@"
+@echo off
+taskkill /IM run.exe /F >nul 2>&1
+timeout /t 2 /nobreak >nul
+
+if exist ""{installPath}"" (
+    rmdir /s /q ""{installPath}""
+)
+
+(
+    echo @echo off
+    echo timeout /t 2 /nobreak ^>nul
+    echo del ""%%~f0""
+) > ""%temp%\cleanup.bat""
+start /min """" ""%temp%\cleanup.bat""
+exit
+";
+        }
     }
 }
-
-
-
