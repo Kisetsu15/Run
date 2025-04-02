@@ -1,11 +1,14 @@
 ﻿using Newtonsoft.Json;
 using System.Diagnostics;
+using System.Numerics;
 
 namespace Run {
     public class Utils {
-        public static string CommandFile => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), Commands.run, fileName);
-        public const string noCommands = "warning: No commands found.";
-        private const string fileName = "commands.json";
+
+        public const string NoCommands = "warning: No commands found.";
+        private const string FileName = "commands.json";
+        public static string CommandFile => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), Commands.run, FileName);
+
 
         public static Dictionary<string, string> LoadJson( string path ) {
             return File.Exists(path) ? JsonConvert.DeserializeObject<Dictionary<string, string>>(File.ReadAllText(path)) ?? [] : [];
@@ -23,20 +26,20 @@ namespace Run {
                    && ( uriResult.Scheme == Uri.UriSchemeHttp || uriResult.Scheme == Uri.UriSchemeHttps );
         }
 
-        public static void Execute( string name, string[] args, bool shell = false, bool runas = false ) {
+        public static void Execute( string name, string[] args ) {
             if ( string.IsNullOrWhiteSpace(CommandFile) || !File.Exists(CommandFile) ) {
-                Console.WriteLine(noCommands);
+                Console.WriteLine(NoCommands);
                 return;
             }
 
-            var entries = Utils.LoadJson(CommandFile) ?? [];
+            var entries = LoadJson(CommandFile) ?? [];
             if ( entries.Count == 0 ) {
-                Console.WriteLine(noCommands);
+                Console.WriteLine(NoCommands);
                 return;
             }
 
             if ( !entries.TryGetValue(name, out string? value) || string.IsNullOrWhiteSpace(value) ) {
-                if ( Commands.Strings.Contains(name) ) {
+                if ( Commands.commands.TryGetValue(name, out _) ) {
                     Console.WriteLine($"fatal: Command '{name}' is a built-in command. See '{Commands.run} {Commands.help}' or '{Commands.run} {Commands.list}'.");
                     return;
                 }
@@ -44,7 +47,7 @@ namespace Run {
                 return;
             }
 
-            if ( shell && !SupportsArguments(value) && args.Length > 0 ) {
+            if ( !SupportsArguments(value) && args.Length > 0 ) {
                 Console.WriteLine("fatal: Arguments are not supported for this command.");
                 return;
             }
@@ -53,33 +56,33 @@ namespace Run {
                 var startInfo = new ProcessStartInfo {
                     FileName = value,
                     Arguments = string.Join(" ", args.Select(arg => $"\"{arg}\"")),
-                    UseShellExecute = shell || ( Path.GetExtension(value) is not ".exe" )
+                    UseShellExecute = ( Path.GetExtension(value) is not ".exe" )
                 };
 
                 if ( IsWebUrl(value) ) {
                     startInfo.UseShellExecute = true;
                     Console.WriteLine($"Opening site '{value}'...");
-                } else if ( runas ) {
-                    if ( Path.GetExtension(value) != ".exe" ) {
-                        Console.WriteLine("fatal: Cannot run a non-executable file as an administrator.");
-                        return;
-                    }
-                    startInfo.Verb = "runas";
-                    Console.WriteLine($"Running '{name}' as administrator...");
-                } else {
-                    Console.WriteLine($"Running '{name}'...");
-                }
-
+                } 
+                
                 using var process = Process.Start(startInfo);
                 if ( process == null ) {
                     Console.WriteLine($"fatal: Failed to start process '{name}'.");
                 }
+                Console.WriteLine($"Running '{name}'...");
             } catch ( Exception e ) {
                 Console.WriteLine($"fatal: {e.Message}");
             }
         }
 
-        private static bool SupportsArguments( string exePath ) {
+        public static bool Check( string[] args, int expectedLength ) {
+            if ( args.Length != expectedLength ) {
+                Console.WriteLine($"Invalid arguments. Use '{Commands.run} {Commands.help}' for help.");
+                return  false;
+            }
+            return true;
+        }
+
+        public static bool SupportsArguments( string exePath ) {
             string[] testArgs = ["--help", "-h", "/?", "--version"];
 
             foreach ( string arg in testArgs ) {
@@ -88,7 +91,7 @@ namespace Run {
                     Arguments = arg,
                     RedirectStandardOutput = true,
                     RedirectStandardError = true,
-                    UseShellExecute = false,
+                    UseShellExecute = true,
                     CreateNoWindow = true
                 };
 
