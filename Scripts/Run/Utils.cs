@@ -77,9 +77,9 @@ namespace Run {
         public static bool Check( string[] args, int expectedLength ) {
             if ( args.Length != expectedLength ) {
                 Console.WriteLine($"Invalid arguments. Use '{Commands.run} {Commands.help}' for help.");
-                return  false;
+                return  true;
             }
-            return true;
+            return false;
         }
 
         public static bool SupportsArguments( string exePath ) {

@@ -5,9 +5,9 @@
                 new HelpCommand().Execute(args);
                 return;
             }
-
-            if ( Commands.commands.TryGetValue(args[0], out ICommand? command) ) {
-                command.Execute(args);
+            string command = args[0];
+            if ( Commands.commands.TryGetValue(command, out ICommand? commandInstance) ) {
+                commandInstance.Execute(args);
             } else {
                 new RunCommand().Execute(args);
             }

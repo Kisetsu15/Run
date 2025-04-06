@@ -4,8 +4,7 @@
             if ( Utils.Check(args, 3) )
                 return;
 
-            string name = args[1];
-            string operation = args[2];
+            string name = args[1], operation = args[2];
 
             if ( !File.Exists(operation) && !Utils.IsWebUrl(operation) ) {
                 Console.WriteLine($"File '{operation}' does not exist and is not a valid URL.");

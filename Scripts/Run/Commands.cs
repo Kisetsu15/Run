@@ -12,7 +12,7 @@
         public const string _version = "-v";
         public const string version = "--version";
 
-        public static readonly Dictionary<string, ICommand> commands = new() {
+        public static readonly Dictionary<string, ICommand> commands = new(StringComparer.OrdinalIgnoreCase) {
             { add, new AddCommand() },
             { remove, new RemoveCommand() },
             { list, new ListCommand() },
