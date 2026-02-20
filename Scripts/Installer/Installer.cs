@@ -1,63 +1,63 @@
-﻿using System.Runtime.InteropServices;
-using System.Diagnostics;
+﻿using System.Diagnostics;
+using System.Runtime.InteropServices;
 
-namespace Run_Installer {
+namespace Run.Scripts.Installer {
     public class Installer {
 
-        private const string Executable = "run.exe";
-        private const string UninstallExecutable = "uninstall.exe";
-        private const string LogFile = "install.log";
-        private const string InstallerLocationFile = "installerLocation.txt";
-        private const string ExecutableUrl = "https://github.com/Kisetsu15/Run/releases/latest/download/run.exe";
-        private const string UninstallUrl = "https://github.com/Kisetsu15/Run/releases/latest/download/uninstall.exe";
+        private const string EXECUTABLE = "run.exe";
+        private const string UNINSTALL_EXECUTABLE = "uninstall.exe";
+        private const string LOG_FILE = "install.log";
+        private const string INSTALLER_LOCATION_FILE = "installerLocation.txt";
+        private const string EXECUTABLE_URL = "https://github.com/Kisetsu15/Run/releases/latest/download/run.exe";
+        private const string UNINSTALL_URL = "https://github.com/Kisetsu15/Run/releases/latest/download/uninstall.exe";
         private static readonly HttpClient client = new();
         private static bool isSilent = false;
         private static readonly string installPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Run");
 
-        public static async Task Main( string[] args ) {
+        public static async Task Main(string[] args) {
             isSilent = args.Contains("--silent") || args.Contains("/S") || args.Contains("/silent");
 
-            if ( args.Contains("--uninstall") ) {
+            if (args.Contains("--uninstall")) {
                 Uninstall();
                 return;
             }
 
-            string runDestination = Path.Combine(Path.GetTempPath(), Executable);
-            string uninstallDestination = Path.Combine(Path.GetTempPath(), UninstallExecutable);
+            string runDestination = Path.Combine(Path.GetTempPath(), EXECUTABLE);
+            string uninstallDestination = Path.Combine(Path.GetTempPath(), UNINSTALL_EXECUTABLE);
 
-            Log($"Downloading '{Executable}' from '{ExecutableUrl}'...");
-            if ( !await DownloadFileWithRetryAsync(ExecutableUrl, runDestination) ) {
+            Log($"Downloading '{EXECUTABLE}' from '{EXECUTABLE_URL}'...");
+            if (!await DownloadFileWithRetryAsync(EXECUTABLE_URL, runDestination)) {
                 Log("Download failed: Run.exe not found.");
                 return;
             }
 
             Log("Downloading 'uninstall.exe'...");
-            if ( !await DownloadFileWithRetryAsync(UninstallUrl, uninstallDestination) ) {
+            if (!await DownloadFileWithRetryAsync(UNINSTALL_URL, uninstallDestination)) {
                 Log("Download failed: Uninstall.exe not found.");
                 return;
             }
 
             Log("Downloads complete.");
-            File.WriteAllText(InstallerLocationFile, Directory.GetCurrentDirectory());
+            File.WriteAllText(INSTALLER_LOCATION_FILE, Directory.GetCurrentDirectory());
             try {
                 Log($"Creating installation directory at {installPath}...");
                 Directory.CreateDirectory(installPath);
                 Log("Moving files to install directory...");
-                MoveFile(runDestination, Path.Combine(installPath, Executable));
-                MoveFile(uninstallDestination, Path.Combine(installPath, UninstallExecutable));
-                MoveFile(InstallerLocationFile, Path.Combine(installPath, InstallerLocationFile));
+                MoveFile(runDestination, Path.Combine(installPath, EXECUTABLE));
+                MoveFile(uninstallDestination, Path.Combine(installPath, UNINSTALL_EXECUTABLE));
+                MoveFile(INSTALLER_LOCATION_FILE, Path.Combine(installPath, INSTALLER_LOCATION_FILE));
                 Log("Move complete.");
                 AddToPath(installPath);
                 Log("Installation complete.");
-            } catch ( Exception ex ) {
+            } catch (Exception ex) {
                 Log($"Fatal error: {ex.Message}");
             }
         }
 
         private static void Uninstall() {
             try {
-                string uninstallPath = Path.Combine(installPath, UninstallExecutable);
-                if ( !File.Exists(uninstallPath) ) {
+                string uninstallPath = Path.Combine(installPath, UNINSTALL_EXECUTABLE);
+                if (!File.Exists(uninstallPath)) {
                     Log("Uninstall executable not found.");
                     return;
                 }
@@ -68,55 +68,56 @@ namespace Run_Installer {
                     UseShellExecute = true
                 };
                 Process.Start(startInfo);
-            } catch ( Exception e ) {
+            } catch (Exception e) {
                 Log($"Fatal error during uninstallation: {e.Message}");
             }
         }
 
-        private static async Task<bool> DownloadFileWithRetryAsync( string url, string destination, int maxRetries = 3 ) {
-            for ( int attempt = 1; attempt <= maxRetries; attempt++ ) {
+        private static async Task<bool> DownloadFileWithRetryAsync(string url, string destination, int maxRetries = 3) {
+            for (int attempt = 1; attempt <= maxRetries; attempt++) {
                 try {
-                    using var response = await client.GetAsync(url);
+                    using HttpResponseMessage response = await client.GetAsync(url);
                     response.EnsureSuccessStatusCode();
                     await using var fs = new FileStream(destination, FileMode.Create, FileAccess.Write, FileShare.None);
                     await response.Content.CopyToAsync(fs);
                     return true;
-                } catch ( Exception e ) {
+                } catch (Exception e) {
                     Log($"Attempt {attempt}: Download failed - {e.Message}");
-                    if ( attempt == maxRetries )
+                    if (attempt == maxRetries) {
                         return false;
+                    }
                 }
             }
             return false;
         }
 
-        private static void MoveFile( string source, string destination ) {
+        private static void MoveFile(string source, string destination) {
             try {
-                if ( File.Exists(destination) ) {
+                if (File.Exists(destination)) {
                     Log($"'{Path.GetFileName(destination)}' already exists in '{installPath}'. Overwriting...");
                     File.Delete(destination);
                 }
                 File.Move(source, destination);
-            } catch ( Exception e ) {
+            } catch (Exception e) {
                 Log($"Fatal error while moving file: {e.Message}");
             }
         }
 
-        private static void AddToPath( string newPath ) {
+        private static void AddToPath(string newPath) {
             try {
-                var target = EnvironmentVariableTarget.User;
-                var currentPath = Environment.GetEnvironmentVariable("PATH", target) ?? "";
+                EnvironmentVariableTarget target = EnvironmentVariableTarget.User;
+                string currentPath = Environment.GetEnvironmentVariable("PATH", target) ?? "";
 
-                if ( currentPath.Split(';').Contains(newPath) ) {
+                if (currentPath.Split(';').Contains(newPath)) {
                     Log($"'{newPath}' is already in PATH.");
                     return;
                 }
 
-                var updatedPath = currentPath + ";" + newPath;
+                string updatedPath = currentPath + ";" + newPath;
                 Environment.SetEnvironmentVariable("PATH", updatedPath, target);
                 Log($"Successfully added '{newPath}' to PATH.");
                 RefreshEnvironment();
-            } catch ( Exception ex ) {
+            } catch (Exception ex) {
                 Log($"Failed to update PATH\nFatal error: {ex.Message}");
             }
         }
@@ -128,20 +129,21 @@ namespace Run_Installer {
                 const int WM_SETTINGCHANGE = 0x1A;
                 const int SMTO_ABORTIFHUNG = 0x0002;
 
-                SendMessageTimeout((IntPtr)HWND_BROADCAST, WM_SETTINGCHANGE, IntPtr.Zero, "Environment", SMTO_ABORTIFHUNG, 5000, out _);
-            } catch ( Exception ex ) {
+                SendMessageTimeout((IntPtr) HWND_BROADCAST, WM_SETTINGCHANGE, IntPtr.Zero, "Environment", SMTO_ABORTIFHUNG, 5000, out _);
+            } catch (Exception ex) {
                 Log($"Failed to refresh environment variables: {ex.Message}");
             }
         }
 
-        private static void Log( string message ) {
-            if ( !isSilent )
+        private static void Log(string message) {
+            if (!isSilent) {
                 Console.WriteLine(message);
+            }
 
-            File.AppendAllText(LogFile, message + Environment.NewLine);
+            File.AppendAllText(LOG_FILE, message + Environment.NewLine);
         }
 
         [DllImport("user32.dll", CharSet = CharSet.Unicode, SetLastError = false)]
-        private static extern IntPtr SendMessageTimeout( IntPtr hWnd, uint Msg, IntPtr wParam, string lParam, uint fuFlags, uint uTimeout, out IntPtr lpdwResult );
+        private static extern IntPtr SendMessageTimeout(IntPtr hWnd, uint Msg, IntPtr wParam, string lParam, uint fuFlags, uint uTimeout, out IntPtr lpdwResult);
     }
 }
