@@ -1,39 +1,39 @@
 ﻿using System.Diagnostics;
 using System.Security.Principal;
 
-namespace Run_Uninstaller {
+namespace Run.Scripts.Uninstaller {
     public class Uninstaller {
-        private static readonly string InstallPath = IsRunningAsAdmin()
+        private static readonly string installPath = IsRunningAsAdmin()
             ? "C:\\Program Files\\Run"
             : Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Run");
 
-        private static readonly string Executable = "run.exe";
+        private static readonly string executable = "run.exe";
 
         private static bool isSilent = false;
 
-        public static void Main( string[] args ) {
+        public static void Main(string[] args) {
             isSilent = args.Contains("--silent") || args.Contains("/S") || args.Contains("/silent");
-            Whisper($"Uninstalling Run from '{InstallPath}'...");
+            Whisper($"Uninstalling Run from '{installPath}'...");
 
-            string exePath = Path.Combine(InstallPath, Executable);
-            if ( !File.Exists(exePath) && !Directory.Exists(InstallPath) ) {
+            string exePath = Path.Combine(installPath, executable);
+            if (!File.Exists(exePath) && !Directory.Exists(installPath)) {
                 Whisper("Run is not installed.");
                 return;
             }
 
             try {
-                RemoveFromPath(InstallPath);
+                RemoveFromPath(installPath);
                 Whisper("Removed from PATH.");
 
                 string batchFile = Path.Combine(Path.GetTempPath(), "uninstall_run.bat");
-                File.WriteAllText(batchFile, CreateBatchScript(InstallPath));
+                File.WriteAllText(batchFile, CreateBatchScript(installPath));
 
                 string installerFile = Path.Combine(GetInstallerDir(), "Run-Installer.exe");
                 string logFile = Path.Combine(GetInstallerDir(), "install.log");
 
-                if ( File.Exists(logFile) )
-                    File.Delete(logFile); 
-                if ( File.Exists(installerFile) )
+                if (File.Exists(logFile))
+                    File.Delete(logFile);
+                if (File.Exists(installerFile))
                     File.Delete(installerFile);
 
                 ProcessStartInfo psi = new() {
@@ -45,7 +45,7 @@ namespace Run_Uninstaller {
                 Process.Start(psi);
 
                 Whisper("Uninstalling...");
-            } catch ( Exception ex ) {
+            } catch (Exception ex) {
                 Whisper($"Error: {ex.Message}");
             }
         }
@@ -59,21 +59,21 @@ namespace Run_Uninstaller {
             }
         }
 
-        private static void Whisper( string message ) {
-            if ( !isSilent ) {
+        private static void Whisper(string message) {
+            if (!isSilent) {
                 Console.WriteLine(message);
             }
         }
 
-        private static void RemoveFromPath( string pathToRemove ) {
+        private static void RemoveFromPath(string pathToRemove) {
             EnvironmentVariableTarget target = IsRunningAsAdmin()
                 ? EnvironmentVariableTarget.Machine
                 : EnvironmentVariableTarget.User;
 
             string currentPath = Environment.GetEnvironmentVariable("PATH", target) ?? "";
-            var paths = currentPath.Split(';').ToList();
+            List<string> paths = currentPath.Split(';').ToList();
 
-            if ( !paths.Contains(pathToRemove) ) {
+            if (!paths.Contains(pathToRemove)) {
                 return;
             }
 
@@ -82,12 +82,12 @@ namespace Run_Uninstaller {
         }
 
         private static bool IsRunningAsAdmin() {
-            using WindowsIdentity identity = WindowsIdentity.GetCurrent();
+            using var identity = WindowsIdentity.GetCurrent();
             WindowsPrincipal principal = new(identity);
             return principal.IsInRole(WindowsBuiltInRole.Administrator);
         }
 
-        private static string CreateBatchScript( string installPath ) {
+        private static string CreateBatchScript(string installPath) {
             return $@"
 @echo off
 taskkill /IM run.exe /F >nul 2>&1
