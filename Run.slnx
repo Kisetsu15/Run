@@ -1,3 +1,5 @@
 <Solution>
-  <Project Path="Run.csproj" />
+  <Project Path="Executable/Executable.csproj" />
+  <Project Path="Installer/Installer.csproj" />
+  <Project Path="Uninstaller/Uninstaller.csproj" />
 </Solution>
