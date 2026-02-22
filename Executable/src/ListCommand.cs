@@ -6,7 +6,7 @@
             }
 
             if (!File.Exists(Utils.CommandFile)) {
-                Console.WriteLine(Utils.NO_COMMANDS);
+                Console.WriteLine(Utils.NO_COMMANDS_WARNING);
                 return;
             }
 
@@ -14,7 +14,7 @@
             commands = commands.OrderBy(pair => pair.Key).ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
 
             if (commands.Count == 0) {
-                Console.WriteLine(Utils.NO_COMMANDS);
+                Console.WriteLine(Utils.NO_COMMANDS_WARNING);
                 return;
             }
 

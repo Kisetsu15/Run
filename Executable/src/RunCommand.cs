@@ -6,13 +6,13 @@
             args = args[1..];
 
             if (string.IsNullOrWhiteSpace(Utils.CommandFile) || !File.Exists(Utils.CommandFile)) {
-                Utils.Warning(Utils.NO_COMMANDS);
+                Utils.Warning(Utils.NO_COMMANDS_WARNING);
                 return;
             }
 
             Dictionary<string, string> entries = Utils.LoadJson(Utils.CommandFile) ?? [];
             if (entries.Count == 0) {
-                Utils.Warning(Utils.NO_COMMANDS);
+                Utils.Warning(Utils.NO_COMMANDS_WARNING);
                 return;
             }
 

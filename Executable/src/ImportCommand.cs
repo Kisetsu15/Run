@@ -1,5 +1,4 @@
-﻿
-namespace Executable {
+﻿namespace Executable {
     public class ImportCommand : ICommand {
         public void Execute(string[] args) {
             if (Utils.Check(args, 2)) {

@@ -1,10 +1,7 @@
-﻿global using Kisetsu.Utils;
-global using System.Diagnostics;
-
-namespace Executable {
+﻿namespace Executable {
     public class Utils {
 
-        public const string NO_COMMANDS = "No commands found.";
+        public const string NO_COMMANDS_WARNING = "No commands found.";
         const string FILE_NAME = "commands.json";
         public static string CommandFile => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), Commands.RUN, FILE_NAME);
 
