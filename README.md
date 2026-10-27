@@ -29,6 +29,8 @@ run [command] [option]
 | `<name> [args]`             | Run the command with the given name.                 |
 | `add <name> <operation>`    | Add a new command with the given name and operation. |
 | `rm <name>` `remove <name>` | Remove the command with the given name.              |
+| `import <file>`             | Import commands from a file.                         |
+| `export <file>`             | Export commands to a file.                           |
 | `-l` `list`                 | List all saved commands.                             |
 | `clear`                     | Clear all stored commands.                           |
 | `-v` `--version`            | Display version information.                         |
